@@ -1,0 +1,134 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using BooksAPI.Models;
+using Microsoft.AspNetCore.Mvc;
+
+
+namespace BooksAPI.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class BooksController : ControllerBase
+    {
+        // GET api/values
+        [HttpGet]
+        public IActionResult GetBooks([FromQuery]string category = "All")
+        {
+            try
+            {
+                using (var context = new BookAppContext())
+                {
+                    switch (category.ToLower())
+                    {
+                        case "all": return Ok(context.Books.ToList());
+                        default: return NotFound("Undefined");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return NotFound();
+            }
+        }
+
+        // GET api/books/102
+        [HttpGet("{id}")]
+        public IActionResult GetBook([FromRoute]int id)
+        {
+
+            try
+            {
+                using (var context = new BookAppContext())
+                {
+                    return Ok(context.Books.FirstOrDefault(a => a.BookId == id));
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return NotFound();
+            }
+        }
+
+        // POST api/books
+        [HttpPost]
+        public IActionResult Post([FromBody] Books book)
+        {
+            try
+            {
+                using (var context = new BookAppContext())
+                {
+                    context.Books.Add(book);
+                    context.SaveChanges();
+                    return Ok(book);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return NotFound();
+            }
+        }
+
+        // PUT api/books/102
+        [HttpPut("{id}")]
+        public IActionResult UpdateBook([FromRoute]string id, [FromBody]Books book)
+        {
+            try
+            {
+                if (Convert.ToInt32(id) == book.BookId)
+                {
+                    using (var context = new BookAppContext())
+                    {
+                        Books updatedBook = context.Books.FirstOrDefault(b => b.BookId == Convert.ToInt32(id));
+                        updatedBook.Title = book.Title;
+                        updatedBook.Author = book.Author;
+                        updatedBook.Publisher = book.Publisher;
+                        updatedBook.NoOfPages = book.NoOfPages;
+                        updatedBook.Rating = book.Rating;
+                        updatedBook.Edition = book.Edition;
+                        updatedBook.Price = book.Price;
+                        updatedBook.ReleaseDate = book.ReleaseDate;
+                        updatedBook.ImageUrl = book.ImageUrl;
+                        context.SaveChanges();
+                        return Ok(book);
+                    }
+                }
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return NotFound();
+            }
+        }
+
+        // DELETE api/books/105
+        [HttpDelete("{id}")]
+        public IActionResult Delete(int id)
+        {
+            try
+            {
+                using (var context = new BookAppContext())
+                {
+                    Books removeBook = context.Books.Where(b => b.BookId == id).FirstOrDefault();
+                    if (removeBook != null)
+                    {
+                        context.Books.Remove(removeBook);
+                        context.SaveChanges();
+                        return Ok(removeBook);
+                    }
+                    return NotFound();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return NotFound();
+            }
+        }
+    }
+}
