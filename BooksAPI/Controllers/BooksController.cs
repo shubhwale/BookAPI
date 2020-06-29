@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using BooksAPI.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-
+using Microsoft.EntityFrameworkCore;
+using BooksAPI.Models;
+using System.Data.SqlClient;
 
 namespace BooksAPI.Controllers
 {
@@ -12,19 +14,35 @@ namespace BooksAPI.Controllers
     [ApiController]
     public class BooksController : ControllerBase
     {
-        // GET api/values
+        private readonly BookAppContext context;
+
+        public BooksController(BookAppContext context)
+        {
+            this.context = context;
+        }
+
+        // GET: api/books
         [HttpGet]
-        public IActionResult GetBooks([FromQuery]string category = "All")
+        public IActionResult GetBooks([FromQuery(Name ="category")]string category = "All")
         {
             try
             {
-                using (var context = new BookAppContext())
+                //context.BooksCategories.Include(bc => bc.Book).ToList()
+                //context.Books.ToList()
+                string c = category.ToLower();
+                var categoryParam = new SqlParameter("@CategoryName", c);
+                switch (c)
                 {
-                    switch (category.ToLower())
-                    {
-                        case "all": return Ok(context.Books.ToList());
-                        default: return NotFound("Undefined");
-                    }
+                    case "all": return Ok(context.Books.ToList());
+                    case "programming":
+                        //var obj = context.Books.FromSql("SP_GetBooksByCategory @CategoryName", categoryParam).ToList();
+                        return Ok(context.Books.FromSql("SP_GetBooksByCategory @CategoryName", categoryParam).ToList());
+                    case "biographies": return Ok(context.Books.FromSql("SP_GetBooksByCategory @CategoryName", categoryParam).ToList());
+                    case "business": return Ok(context.Books.FromSql("SP_GetBooksByCategory @CategoryName", categoryParam).ToList());
+                    case "technology": return Ok(context.Books.FromSql("SP_GetBooksByCategory @CategoryName", categoryParam).ToList());
+                    case "history": return Ok(context.Books.FromSql("SP_GetBooksByCategory @CategoryName", categoryParam).ToList());
+                    case "self_help": return Ok(context.Books.FromSql("SP_GetBooksByCategory @CategoryName", categoryParam).ToList());
+                    default: return Ok(context.Books.FromSql("SP_GetBooksByCategory @CategoryName", categoryParam).ToList());
                 }
             }
             catch (Exception ex)
@@ -34,101 +52,115 @@ namespace BooksAPI.Controllers
             }
         }
 
-        // GET api/books/102
+        // GET: api/Books/5
         [HttpGet("{id}")]
-        public IActionResult GetBook([FromRoute]int id)
+        public async Task<IActionResult> GetBooks([FromRoute] int id)
         {
-
-            try
+            if (!ModelState.IsValid)
             {
-                using (var context = new BookAppContext())
-                {
-                    return Ok(context.Books.FirstOrDefault(a => a.BookId == id));
-                }
+                return BadRequest(ModelState);
             }
-            catch (Exception ex)
+
+            var book = await context.Books.FindAsync(id);
+
+            
+
+            if (book == null)
             {
-                Console.WriteLine(ex.Message);
                 return NotFound();
             }
+
+            return Ok(book);
         }
 
-        // POST api/books
-        [HttpPost]
-        public IActionResult Post([FromBody] Books book)
-        {
-            try
-            {
-                using (var context = new BookAppContext())
-                {
-                    context.Books.Add(book);
-                    context.SaveChanges();
-                    return Ok(book);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                return NotFound();
-            }
-        }
-
-        // PUT api/books/102
+        // PUT: api/Books/5
         [HttpPut("{id}")]
-        public IActionResult UpdateBook([FromRoute]string id, [FromBody]Books book)
+        public async Task<IActionResult> PutBooks([FromRoute] int id, [FromBody] Books books)
         {
-            try
+            if (!ModelState.IsValid)
             {
-                if (Convert.ToInt32(id) == book.BookId)
-                {
-                    using (var context = new BookAppContext())
-                    {
-                        Books updatedBook = context.Books.FirstOrDefault(b => b.BookId == Convert.ToInt32(id));
-                        updatedBook.Title = book.Title;
-                        updatedBook.Author = book.Author;
-                        updatedBook.Publisher = book.Publisher;
-                        updatedBook.NoOfPages = book.NoOfPages;
-                        updatedBook.Rating = book.Rating;
-                        updatedBook.Edition = book.Edition;
-                        updatedBook.Price = book.Price;
-                        updatedBook.ReleaseDate = book.ReleaseDate;
-                        updatedBook.ImageUrl = book.ImageUrl;
-                        context.SaveChanges();
-                        return Ok(book);
-                    }
-                }
-                return NotFound();
+                return BadRequest(ModelState);
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                return NotFound();
-            }
-        }
 
-        // DELETE api/books/105
-        [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
-        {
+            if (id != books.BookId)
+            {
+                return BadRequest();
+            }
+
+            context.Entry(books).State = EntityState.Modified;
+
             try
             {
-                using (var context = new BookAppContext())
+                await context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!BooksExists(id))
                 {
-                    Books removeBook = context.Books.Where(b => b.BookId == id).FirstOrDefault();
-                    if (removeBook != null)
-                    {
-                        context.Books.Remove(removeBook);
-                        context.SaveChanges();
-                        return Ok(removeBook);
-                    }
                     return NotFound();
                 }
+                else
+                {
+                    throw;
+                }
             }
-            catch (Exception ex)
+
+            return NoContent();
+        }
+
+        // POST: api/Books
+        [HttpPost]
+        public async Task<IActionResult> PostBooks([FromBody] Books books)
+        {
+            if (!ModelState.IsValid)
             {
-                Console.WriteLine(ex.Message);
+                return BadRequest(ModelState);
+            }
+
+            context.Books.Add(books);
+            try
+            {
+                await context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                if (BooksExists(books.BookId))
+                {
+                    return new StatusCodeResult(StatusCodes.Status409Conflict);
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return CreatedAtAction("GetBooks", new { id = books.BookId }, books);
+        }
+
+        // DELETE: api/Books/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteBooks([FromRoute] int id)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var books = await context.Books.FindAsync(id);
+            if (books == null)
+            {
                 return NotFound();
             }
+
+            context.Books.Remove(books);
+            await context.SaveChangesAsync();
+
+            return Ok(books);
+        }
+
+        private bool BooksExists(int id)
+        {
+            return context.Books.Any(e => e.BookId == id);
         }
     }
 }

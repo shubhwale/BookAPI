@@ -16,19 +16,17 @@ namespace BooksAPI.Models
         }
 
         public virtual DbSet<Books> Books { get; set; }
+        public virtual DbSet<BooksCategories> BooksCategories { get; set; }
         public virtual DbSet<Categories> Categories { get; set; }
         public virtual DbSet<Cities> Cities { get; set; }
         public virtual DbSet<Customers> Customers { get; set; }
         public virtual DbSet<States> States { get; set; }
 
-        // Unable to generate entity type for table 'dbo.Books_Categories'. Please see the warning messages.
-
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
             {
-                //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. See http://go.microsoft.com/fwlink/?LinkId=723263 for guidance on storing connection strings.
-                optionsBuilder.UseSqlServer("server=(local);Database=BookApp;Trusted_Connection=True;");
+                optionsBuilder.UseSqlServer("Name=BookAppDefault");
             }
         }
 
@@ -60,6 +58,25 @@ namespace BooksAPI.Models
                     .IsRequired()
                     .HasMaxLength(50)
                     .IsUnicode(false);
+            });
+
+            modelBuilder.Entity<BooksCategories>(entity =>
+            {
+                entity.HasKey(e => new { e.Bid, e.Cid });
+
+                entity.ToTable("Books_Categories");
+
+                entity.HasOne(d => d.B)
+                    .WithMany(p => p.BooksCategories)
+                    .HasForeignKey(d => d.Bid)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_Bid");
+
+                entity.HasOne(d => d.C)
+                    .WithMany(p => p.BooksCategories)
+                    .HasForeignKey(d => d.Cid)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_Cid");
             });
 
             modelBuilder.Entity<Categories>(entity =>

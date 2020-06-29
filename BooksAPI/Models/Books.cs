@@ -5,6 +5,11 @@ namespace BooksAPI.Models
 {
     public partial class Books
     {
+        public Books()
+        {
+            BooksCategories = new HashSet<BooksCategories>();
+        }
+
         public int BookId { get; set; }
         public string Title { get; set; }
         public string Author { get; set; }
@@ -15,5 +20,7 @@ namespace BooksAPI.Models
         public int Price { get; set; }
         public DateTime ReleaseDate { get; set; }
         public string ImageUrl { get; set; }
+
+        public ICollection<BooksCategories> BooksCategories { get; set; }
     }
 }

@@ -29,8 +29,9 @@ namespace BooksAPI
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
-            //services.AddDbContext<BookAppContext>(options => options.UseSqlServer(Configuration.GetConnectionString("BookAppDefault")));
-            //services.AddIdentity<Customers,IdentityRole>().AddEntityFrameworkStores<BookAppContext>().AddDefaultTokenProviders();
+            services.AddDbContext<BookAppContext>(options =>
+                    options.UseSqlServer(Configuration.GetConnectionString("BookAppDefault")));
+            
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -47,6 +48,7 @@ namespace BooksAPI
 
             app.UseHttpsRedirection();
             app.UseMvc();
+            
         }
     }
 }
