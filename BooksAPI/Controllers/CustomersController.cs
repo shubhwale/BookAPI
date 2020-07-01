@@ -6,91 +6,169 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BooksAPI.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Options;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 
 namespace BooksAPI.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class CustomersController : ControllerBase
     {
-        // GET api/customers
+        private readonly BookAppContext _context;
+        private readonly JWTSettings _jwtSettings;
+
+        public CustomersController(BookAppContext context,IOptions<JWTSettings> jwtSettings)
+        {
+            _context = context;
+            _jwtSettings = jwtSettings.Value;
+        }
+
+        // GET: api/Customers
         [HttpGet]
-        public IActionResult GetCustomers()
+        public IEnumerable<Customers> GetCustomers()
         {
-            try
-            {
-                using (var context = new BookAppContext())
-                {
-                    return Ok(context.Customers.ToList());
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                return NotFound();
-            }
+            return _context.Customers.ToList();
         }
 
-        // GET api/customers
+        //GET: api/customers/login
+        [HttpGet("login")]
+        public async Task<ActionResult<CustomerWithToken>> Login([FromBody] Customers customer)
+        {
+            customer = await _context.Customers.Where(c => c.Email == customer.Email && c.Password == customer.Password).FirstOrDefaultAsync();
+            CustomerWithToken customerWithToken = new CustomerWithToken(customer);
+
+            if(customerWithToken == null)
+            {
+                return NotFound();
+            }
+
+            //sign token here
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(_jwtSettings.SecretKey);
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new Claim[]
+                {
+                    new Claim(ClaimTypes.Name,customer.Email)
+                }),
+                Expires = DateTime.UtcNow.AddDays(1),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key),SecurityAlgorithms.HmacSha256Signature)
+            };
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            customerWithToken.Token = tokenHandler.WriteToken(token);
+
+            return customerWithToken;
+        }
+
+        // GET: api/Customers
+        [HttpGet("getcust")]
+        public async Task<ActionResult<Customers>> GetCustAsync()
+        {
+            string emailAddress = HttpContext.User.Identity.Name;
+            var cust = await _context.Customers.Where(c => c.Email == emailAddress).FirstOrDefaultAsync();
+            cust.Password = null;
+            return Ok(cust);
+        }
+
+        // GET: api/Customers/5
         [HttpGet("{id}")]
-        public IActionResult GetCustomers([FromRoute] int id)
+        public async Task<IActionResult> GetCustomers([FromRoute] int id)
         {
-            try
+            if (!ModelState.IsValid)
             {
-                using (var context = new BookAppContext())
-                {
-                    return Ok(context.Customers.FirstOrDefault(c => c.CustId == id));
-                }
+                return BadRequest(ModelState);
             }
-            catch (Exception ex)
+
+            var customers = await _context.Customers.FindAsync(id);
+
+            if (customers == null)
             {
-                Console.WriteLine(ex.Message);
                 return NotFound();
             }
+
+            return Ok(customers);
         }
 
-        // POST: api/customers/signin
-        [HttpPost("signin")]
-        public IActionResult Signin([FromBody] Customers customer)
+        // PUT: api/Customers/5
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutCustomers([FromRoute] int id, [FromBody] Customers customers)
         {
-            using (var context = new BookAppContext())
+            if (!ModelState.IsValid)
             {
-                try
-                {
-                    var email = context.Customers.FirstOrDefault(c => c.Email == customer.Email);
-                    var password = context.Customers.FirstOrDefault(c => c.Password == customer.Password);
-                    if (email != null && password != null)
-                    {
-                        return Ok();
-                    }
-                    return NotFound();
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                    return NotFound();
-                }
+                return BadRequest(ModelState);
             }
-        }
 
-        // POST: api/customers/signup
-        [HttpPost("signup")]
-        public IActionResult Signup([FromBody] Customers customer)
-        {
+            if (id != customers.CustId)
+            {
+                return BadRequest();
+            }
+
+            _context.Entry(customers).State = EntityState.Modified;
+
             try
             {
-                using (var context = new BookAppContext())
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!CustomersExists(id))
                 {
-                    context.Customers.Add(customer);
-                    context.SaveChanges();
-                    return Ok();
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
                 }
             }
-            catch (Exception ex)
+
+            return NoContent();
+        }
+
+        // POST: api/Customers
+        [HttpPost]
+        public async Task<IActionResult> PostCustomers([FromBody] Customers customers)
+        {
+            if (!ModelState.IsValid)
             {
-                Console.WriteLine(ex.Message);
+                return BadRequest(ModelState);
+            }
+
+            _context.Customers.Add(customers);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction("GetCustomers", new { id = customers.CustId }, customers);
+        }
+
+        // DELETE: api/Customers/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteCustomers([FromRoute] int id)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var customers = await _context.Customers.FindAsync(id);
+            if (customers == null)
+            {
                 return NotFound();
             }
+
+            _context.Customers.Remove(customers);
+            await _context.SaveChangesAsync();
+
+            return Ok(customers);
+        }
+
+        private bool CustomersExists(int id)
+        {
+            return _context.Customers.Any(e => e.CustId == id);
         }
     }
 }
