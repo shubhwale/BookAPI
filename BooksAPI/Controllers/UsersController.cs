@@ -11,6 +11,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
+using System.Security.Cryptography;
 
 namespace BooksAPI.Controllers
 {
@@ -27,7 +28,7 @@ namespace BooksAPI.Controllers
             _jwtSettings = jwtSettings.Value;
         }
 
-        private string SignJwtToken(ResponseModel responseModel)
+        private string SignJwtAccessToken(int id)
         {
             //sign token here
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -36,13 +37,29 @@ namespace BooksAPI.Controllers
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
-                    new Claim(ClaimTypes.Name,responseModel.Email)
+                    new Claim(ClaimTypes.Name,Convert.ToString(id))
                 }),
-                Expires = DateTime.UtcNow.AddDays(1),
+                Expires = DateTime.UtcNow.AddSeconds(10),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
+        }
+
+        //generate refresh token here
+        private RefreshToken GenerateRefreshToken()
+        {
+            RefreshToken refreshToken = new RefreshToken();
+
+            var randomNumber = new Byte[32];
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(randomNumber);
+                refreshToken.Token = Convert.ToBase64String(randomNumber);
+            }
+            refreshToken.ExpiryDate = DateTime.UtcNow.AddMonths(6);
+
+            return refreshToken;
         }
 
         //Testing purpose
@@ -73,16 +90,81 @@ namespace BooksAPI.Controllers
         public async Task<ActionResult<ResponseModel>> LoginUser([FromBody] Users user)
         {
             user = await _context.Users.Where(u => u.Email == user.Email && u.Password == user.Password).FirstOrDefaultAsync();
-            ResponseModel responseModel = new ResponseModel(user);
+            ResponseModel responseModel = null;
 
+            if(user != null)
+            {
+                RefreshToken refreshToken = GenerateRefreshToken();
+                user.RefreshToken.Add(refreshToken);
+                await _context.SaveChangesAsync();
+
+                responseModel = new ResponseModel(user);
+                responseModel.RefreshToken = refreshToken.Token;
+            }
+            
             if(responseModel == null)
             {
                 return NotFound();
             }
-
-            responseModel.Token = SignJwtToken(responseModel);
+            responseModel.AccessToken = SignJwtAccessToken(responseModel.UserId);
 
             return responseModel;
+        }
+
+        // POST: api/Users/refreshtoken
+        [HttpPost("refreshtoken")]
+        public async Task<ActionResult<ResponseModel>> RefreshToken([FromBody] RefreshRequest refreshRequest)
+        {
+            Users user = GetUserFromToken(refreshRequest.Token);
+
+            if(user!=null && ValidateRefreshToken(user,refreshRequest.Token))
+            {
+                ResponseModel responseModel = new ResponseModel(user);
+                responseModel.AccessToken = SignJwtAccessToken(responseModel.UserId);
+                return responseModel;
+            }
+            return null;
+        }
+
+        private bool ValidateRefreshToken(Users user, string refreshToken)
+        {
+            RefreshToken refreshTokenUser = _context.RefreshToken.Where(rt => rt.Token == refreshToken)
+                                            .OrderByDescending(rt => rt.ExpiryDate)
+                                            .FirstOrDefault();
+
+            if(refreshTokenUser!=null && refreshTokenUser.UserId == user.UserId && refreshTokenUser.ExpiryDate>DateTime.UtcNow)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private Users GetUserFromToken(string token)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(_jwtSettings.SecretKey);
+
+            var tokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(key),
+                ValidateIssuer = false,
+                ValidateAudience = false
+            };
+
+            SecurityToken securityToken;
+
+            var principle = tokenHandler.ValidateToken(token, tokenValidationParameters, out securityToken);
+
+            JwtSecurityToken jwtSecurityToken = securityToken as JwtSecurityToken;
+            if (jwtSecurityToken != null && jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256,StringComparison.InvariantCultureIgnoreCase))
+            {
+                var userId = principle.FindFirst(ClaimTypes.Name)?.Value;
+                return _context.Users.Where(u => u.UserId == Convert.ToInt32(User)).FirstOrDefault();
+            }
+
+            return null;
         }
 
 

@@ -19,6 +19,7 @@ namespace BooksAPI.Models
             this.StateId = user.StateId;
         }
 
-        public string Token { get; set; }
+        public string AccessToken { get; set; }
+        public string RefreshToken { set; get; }
     }
 }

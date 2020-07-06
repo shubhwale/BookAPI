@@ -121,7 +121,7 @@ namespace BooksAPI.Models
                 entity.HasOne(d => d.User)
                     .WithMany(p => p.RefreshToken)
                     .HasForeignKey(d => d.UserId)
-                    .HasConstraintName("FK__RefreshTo__user___5CD6CB2B");
+                    .HasConstraintName("FK_UserId");
             });
 
             modelBuilder.Entity<States>(entity =>
