@@ -39,14 +39,14 @@ namespace BooksAPI.Handlers
                 string[] credentials = Encoding.UTF8.GetString(bytes).Split(":");
                 string emailAddress = credentials[0];
                 string password = credentials[1];
-                Customers customer = _context.Customers.Where(cust => cust.Email == emailAddress && cust.Password == password).FirstOrDefault();
-                if(customer == null)
+                Users user = _context.Users.Where(u => u.Email == emailAddress && u.Password == password).FirstOrDefault();
+                if(user == null)
                 {
                     return AuthenticateResult.Fail("Invalid username or password");
                 }
                 else
                 {
-                    var claims = new[] { new Claim(ClaimTypes.Name, customer.Email) };
+                    var claims = new[] { new Claim(ClaimTypes.Name, user.Email) };
                     var identity = new ClaimsIdentity(claims, Scheme.Name);
                     var principal = new ClaimsPrincipal(identity);
                     var ticket = new AuthenticationTicket(principal, Scheme.Name);

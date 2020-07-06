@@ -3,9 +3,14 @@ using System.Collections.Generic;
 
 namespace BooksAPI.Models
 {
-    public partial class Customers
+    public partial class Users
     {
-        public int CustId { get; set; }
+        public Users()
+        {
+            RefreshToken = new HashSet<RefreshToken>();
+        }
+
+        public int UserId { get; set; }
         public string Name { get; set; }
         public string Email { get; set; }
         public string Password { get; set; }
@@ -17,5 +22,6 @@ namespace BooksAPI.Models
 
         public Cities City { get; set; }
         public States State { get; set; }
+        public ICollection<RefreshToken> RefreshToken { get; set; }
     }
 }

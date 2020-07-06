@@ -19,8 +19,9 @@ namespace BooksAPI.Models
         public virtual DbSet<BooksCategories> BooksCategories { get; set; }
         public virtual DbSet<Categories> Categories { get; set; }
         public virtual DbSet<Cities> Cities { get; set; }
-        public virtual DbSet<Customers> Customers { get; set; }
+        public virtual DbSet<RefreshToken> RefreshToken { get; set; }
         public virtual DbSet<States> States { get; set; }
+        public virtual DbSet<Users> Users { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -99,9 +100,45 @@ namespace BooksAPI.Models
                     .IsUnicode(false);
             });
 
-            modelBuilder.Entity<Customers>(entity =>
+            modelBuilder.Entity<RefreshToken>(entity =>
             {
-                entity.HasKey(e => e.CustId);
+                entity.HasKey(e => e.TokenId);
+
+                entity.Property(e => e.TokenId).HasColumnName("token_id");
+
+                entity.Property(e => e.ExpiryDate)
+                    .HasColumnName("expiry_date")
+                    .HasColumnType("datetime");
+
+                entity.Property(e => e.Token)
+                    .IsRequired()
+                    .HasColumnName("token")
+                    .HasMaxLength(200)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.UserId).HasColumnName("user_id");
+
+                entity.HasOne(d => d.User)
+                    .WithMany(p => p.RefreshToken)
+                    .HasForeignKey(d => d.UserId)
+                    .HasConstraintName("FK__RefreshTo__user___5CD6CB2B");
+            });
+
+            modelBuilder.Entity<States>(entity =>
+            {
+                entity.HasKey(e => e.StateId);
+
+                entity.Property(e => e.StateName)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .IsUnicode(false);
+            });
+
+            modelBuilder.Entity<Users>(entity =>
+            {
+                entity.HasKey(e => e.UserId);
+
+                entity.Property(e => e.UserId).HasColumnName("UserID");
 
                 entity.Property(e => e.AddressLine)
                     .IsRequired()
@@ -133,26 +170,16 @@ namespace BooksAPI.Models
                 entity.Property(e => e.StateId).HasColumnName("StateID");
 
                 entity.HasOne(d => d.City)
-                    .WithMany(p => p.Customers)
+                    .WithMany(p => p.Users)
                     .HasForeignKey(d => d.CityId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_Cities");
 
                 entity.HasOne(d => d.State)
-                    .WithMany(p => p.Customers)
+                    .WithMany(p => p.Users)
                     .HasForeignKey(d => d.StateId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_States");
-            });
-
-            modelBuilder.Entity<States>(entity =>
-            {
-                entity.HasKey(e => e.StateId);
-
-                entity.Property(e => e.StateName)
-                    .IsRequired()
-                    .HasMaxLength(50)
-                    .IsUnicode(false);
             });
         }
     }

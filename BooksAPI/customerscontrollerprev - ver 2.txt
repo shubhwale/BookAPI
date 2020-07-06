@@ -1,22 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using BooksAPI.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Options;
-using System.IdentityModel.Tokens.Jwt;
-using System.Text;
-using Microsoft.IdentityModel.Tokens;
-using System.Security.Claims;
-
-namespace BooksAPI.Controllers
-{
-    [Authorize]
-    [Route("api/[controller]")]
+[Route("api/[controller]")]
     [ApiController]
     public class CustomersController : ControllerBase
     {
@@ -29,6 +11,24 @@ namespace BooksAPI.Controllers
             _jwtSettings = jwtSettings.Value;
         }
 
+        private string GenerateAccessToken(int customerId)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(_jwtSettings.SecretKey);
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new Claim[]
+                {
+                    new Claim(ClaimTypes.Name,Convert.ToString(customerId))
+                }),
+                Expires = DateTime.UtcNow.AddDays(1),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token); 
+        }
+        
+        
         // GET: api/Customers
         [HttpGet]
         public IEnumerable<Customers> GetCustomers()
@@ -36,34 +36,69 @@ namespace BooksAPI.Controllers
             return _context.Customers.ToList();
         }
 
-        //GET: api/customers/login
-        [HttpGet("login")]
+        //POST: api/customers/login
+        [HttpPost("login")]
         public async Task<ActionResult<CustomerWithToken>> Login([FromBody] Customers customer)
         {
             customer = await _context.Customers.Where(c => c.Email == customer.Email && c.Password == customer.Password).FirstOrDefaultAsync();
-            CustomerWithToken customerWithToken = new CustomerWithToken(customer);
+            CustomerWithToken customerWithToken = null;
 
-            if(customerWithToken == null)
+            if(customer!=null)
+            {
+                RefreshToken refreshToken = GenerateRefreshToken();
+                customer.RefreshToken.Add(refreshToken);
+                await _context.SaveChangesAsync();
+
+                customerWithToken = new CustomerWithToken(customer);
+                customerWithToken.RefreshToken = refreshToken.Token;
+            }
+
+            if (customerWithToken == null)
             {
                 return NotFound();
             }
 
-            //sign token here
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_jwtSettings.SecretKey);
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(new Claim[]
-                {
-                    new Claim(ClaimTypes.Name,customer.Email)
-                }),
-                Expires = DateTime.UtcNow.AddDays(1),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key),SecurityAlgorithms.HmacSha256Signature)
-            };
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            customerWithToken.Token = tokenHandler.WriteToken(token);
-
+            //sign your token here
+            customerWithToken.AccessToken = GenerateAccessToken(customer.CustId);
+            
             return customerWithToken;
+        }
+
+        //POST: api/customers/login
+        [HttpPost("RefreshToken")]
+        public async Task<ActionResult<CustomerWithToken>> RefreshToken([FromBody] RefreshRequest refreshRequest)
+        {
+            Customers customer = GetCustomerFromAccessToken(refreshRequest.AccessToken);
+
+            if(customer!=null && ValidateFreshToken(customer,refreshRequest.RefreshToken))
+            {
+
+            }
+
+            return null;
+        }
+
+        private bool ValidateFreshToken(Customers customer, string refreshToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        private Customers GetCustomerFromAccessToken(string accessToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        private RefreshToken GenerateRefreshToken()
+        {
+            RefreshToken refreshToken = new RefreshToken();
+            var randomNumber = new byte[32];
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(randomNumber);
+                refreshToken.Token = Convert.ToBase64String(randomNumber);
+            }
+            refreshToken.ExpiryDate = DateTime.UtcNow.AddMonths(6);
+            return refreshToken;
         }
 
         // GET: api/Customers
@@ -171,4 +206,3 @@ namespace BooksAPI.Controllers
             return _context.Customers.Any(e => e.CustId == id);
         }
     }
-}

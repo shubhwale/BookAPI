@@ -7,12 +7,12 @@ namespace BooksAPI.Models
     {
         public Cities()
         {
-            Customers = new HashSet<Customers>();
+            Users = new HashSet<Users>();
         }
 
         public int CityId { get; set; }
         public string CityName { get; set; }
 
-        public ICollection<Customers> Customers { get; set; }
+        public ICollection<Users> Users { get; set; }
     }
 }
