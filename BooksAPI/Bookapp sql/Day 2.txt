@@ -1,0 +1,11 @@
+USE BookApp
+
+CREATE TABLE Categories
+(
+	CategoryId INT PRIMARY KEY IDENTITY(1,1),
+	CategoryName VARCHAR(30) NOT NULL
+)
+
+ALTER TABLE Books DROP COLUMN Category
+
+ALTER TABLE Books ADD CategoryID INT NOT NULL FOREIGN KEY REFERENCES Categories(CategoryId)
