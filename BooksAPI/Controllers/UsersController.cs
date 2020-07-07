@@ -27,7 +27,7 @@ namespace BooksAPI.Controllers
             _jwtSettings = jwtSettings.Value;
         }
 
-        private string SignJwtToken(ResponseModel responseModel)
+        private string GenerateToken(ResponseModel responseModel)
         {
             //sign token here
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -80,7 +80,7 @@ namespace BooksAPI.Controllers
                 return NotFound();
             }
 
-            responseModel.Token = SignJwtToken(responseModel);
+            responseModel.Token = GenerateToken(responseModel);
 
             return responseModel;
         }
@@ -89,7 +89,7 @@ namespace BooksAPI.Controllers
         // PUT: api/Users/5
         [HttpPut("{id}")]
         //public async Task<IActionResult> EditUser([FromRoute] int id, [FromBody] Users users)
-        public async Task<IActionResult> EditUser([FromBody] Users users)
+        public async Task<IActionResult> UpdateUser([FromBody] Users users)
         {
             if (!ModelState.IsValid)
             {
