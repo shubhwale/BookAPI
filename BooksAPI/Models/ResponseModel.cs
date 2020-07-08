@@ -2,13 +2,16 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 
 namespace BooksAPI.Models
 {
-    public class ResponseModel : Users
+    [ModelMetadataType(typeof(MetaData))]
+    public partial class ResponseModel : Users
     {
         public ResponseModel(Users user)
         {
+
             this.UserId = user.UserId;
             this.Email = user.Email;
             this.Name = user.Name;
