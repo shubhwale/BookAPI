@@ -12,6 +12,7 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Security.Cryptography;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BooksAPI.Controllers
 {
@@ -273,6 +274,16 @@ namespace BooksAPI.Controllers
                 Console.WriteLine(ex.Message);
                 return null;
             }
+        }
+
+        [HttpGet("getuserprofile")]
+        [Authorize]
+        //GET : /api/Users
+        public async Task<Object> GetUserProfile()
+        {
+            string userId = User.Claims.First(c => c.Type == "UserID").Value;
+            var user = await _context.Users.FindAsync(userId);
+            return user;
         }
 
         private bool UsersExists(int id)
