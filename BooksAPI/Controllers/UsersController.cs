@@ -79,6 +79,36 @@ namespace BooksAPI.Controllers
             }
         }
 
+        //GET: api/users/listcities
+        [HttpGet("listcities")]
+        public IEnumerable<Cities> GetCities()
+        {
+            try
+            {
+                return _context.Cities.ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return null;
+            }
+        }
+
+        //GET: api/users/liststates
+        [HttpGet("liststates")]
+        public IEnumerable<States> GetStates()
+        {
+            try
+            {
+                return _context.States.ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return null;
+            }
+        }
+
         // POST: api/Users/register
         [HttpPost("register")]
         public async Task<IActionResult> RegisterUser([FromBody] Users user)
@@ -276,7 +306,7 @@ namespace BooksAPI.Controllers
             }
         }
 
-        [HttpGet("getuserprofile")]
+        [HttpGet("getuserprofile/{id}")]
         [Authorize]
         //GET : /api/Users
         public async Task<Object> GetUserProfile()
