@@ -306,15 +306,7 @@ namespace BooksAPI.Controllers
             }
         }
 
-        [HttpGet("getuserprofile/{id}")]
-        [Authorize]
-        //GET : /api/Users
-        public async Task<Object> GetUserProfile()
-        {
-            string userId = User.Claims.First(c => c.Type == "UserID").Value;
-            var user = await _context.Users.FindAsync(userId);
-            return user;
-        }
+        
 
         private bool UsersExists(int id)
         {
