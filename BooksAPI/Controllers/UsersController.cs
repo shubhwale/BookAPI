@@ -12,7 +12,6 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Security.Cryptography;
-using Microsoft.AspNetCore.Authorization;
 
 namespace BooksAPI.Controllers
 {
@@ -23,7 +22,7 @@ namespace BooksAPI.Controllers
         private readonly BookAppContext _context;
         private readonly JWTSettings _jwtSettings;
 
-        public UsersController(BookAppContext context,IOptions<JWTSettings> jwtSettings)
+        public UsersController(BookAppContext context, IOptions<JWTSettings> jwtSettings)
         {
             _context = context;
             _jwtSettings = jwtSettings.Value;
@@ -123,7 +122,7 @@ namespace BooksAPI.Controllers
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
 
-                
+
 
                 return CreatedAtAction("GetUsers", new { id = user.UserId }, user);
             }
@@ -197,7 +196,7 @@ namespace BooksAPI.Controllers
                                             .OrderByDescending(rt => rt.ExpiryDate)
                                             .FirstOrDefault();
 
-            if(refreshTokenUser!=null && refreshTokenUser.UserId == user.UserId && refreshTokenUser.ExpiryDate>DateTime.UtcNow)
+            if (refreshTokenUser != null && refreshTokenUser.UserId == user.UserId && refreshTokenUser.ExpiryDate > DateTime.UtcNow)
             {
                 return true;
             }
@@ -223,7 +222,7 @@ namespace BooksAPI.Controllers
             var principle = tokenHandler.ValidateToken(token, tokenValidationParameters, out securityToken);
 
             JwtSecurityToken jwtSecurityToken = securityToken as JwtSecurityToken;
-            if (jwtSecurityToken != null && jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256,StringComparison.InvariantCultureIgnoreCase))
+            if (jwtSecurityToken != null && jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
             {
                 var userId = principle.FindFirst(ClaimTypes.Name)?.Value;
                 return _context.Users.Where(u => u.UserId == Convert.ToInt32(User)).FirstOrDefault();
@@ -305,8 +304,6 @@ namespace BooksAPI.Controllers
                 return null;
             }
         }
-
-        
 
         private bool UsersExists(int id)
         {

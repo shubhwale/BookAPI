@@ -8,10 +8,10 @@ using Microsoft.EntityFrameworkCore;
 using BooksAPI.Models;
 using System.Data.SqlClient;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Data.SqlClient;
 
 namespace BooksAPI.Controllers
 {
-    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class BooksController : ControllerBase
@@ -31,12 +31,27 @@ namespace BooksAPI.Controllers
             var categoryIdParameter = new SqlParameter("@CategoryId", categoryId);
             try
             {
-                if(categoryId == 0)
+                if (categoryId == 0)
                 {
                     return Ok(context.Books.ToList());
                 }
-                return Ok(context.Books.FromSql("SP_GetBooksByCategoryId @CategoryId", categoryIdParameter).ToList());
-                
+                return Ok(context.Books.FromSqlRaw("SP_GetBooksByCategoryId @CategoryId", categoryIdParameter).ToListAsync());
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return NotFound();
+            }
+        }
+
+        //GEt: api/books/getcategories
+        [HttpGet("getcategories")]
+        public IActionResult GetCategories()
+        {
+            try
+            {
+                return Ok(context.Categories.ToList());
             }
             catch (Exception ex)
             {
@@ -73,6 +88,7 @@ namespace BooksAPI.Controllers
         }
 
         // PUT: api/Books/5
+        [Authorize]
         [HttpPut("{id}")]
         //public async Task<IActionResult> EditBook([FromRoute] int id, [FromBody] Books books)
         public async Task<IActionResult> EditBook([FromBody] Books books)
@@ -117,6 +133,7 @@ namespace BooksAPI.Controllers
         }
 
         // POST: api/Books
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> AddBook([FromBody] Books books)
         {
@@ -154,6 +171,7 @@ namespace BooksAPI.Controllers
         }
 
         // DELETE: api/Books/5
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteBook([FromRoute] int id)
         {

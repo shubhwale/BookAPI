@@ -1,5 +1,6 @@
 ﻿using BooksAPI.Models;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -39,7 +40,7 @@ namespace BooksAPI.Handlers
                 string[] credentials = Encoding.UTF8.GetString(bytes).Split(":");
                 string emailAddress = credentials[0];
                 string password = credentials[1];
-                Users user = _context.Users.Where(u => u.Email == emailAddress && u.Password == password).FirstOrDefault();
+                Users user = await _context.Users.Where(u => u.Email == emailAddress && u.Password == password).FirstOrDefaultAsync();
                 if(user == null)
                 {
                     return AuthenticateResult.Fail("Invalid username or password");
