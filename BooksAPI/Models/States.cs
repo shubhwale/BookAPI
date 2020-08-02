@@ -13,6 +13,6 @@ namespace BooksAPI.Models
         public int StateId { get; set; }
         public string StateName { get; set; }
 
-        public ICollection<Users> Users { get; set; }
+        public virtual ICollection<Users> Users { get; set; }
     }
 }

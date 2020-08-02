@@ -13,6 +13,6 @@ namespace BooksAPI.Models
         public int CategoryId { get; set; }
         public string CategoryName { get; set; }
 
-        public ICollection<BooksCategories> BooksCategories { get; set; }
+        public virtual ICollection<BooksCategories> BooksCategories { get; set; }
     }
 }

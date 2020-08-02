@@ -8,7 +8,7 @@ namespace BooksAPI.Models
         public int Bid { get; set; }
         public int Cid { get; set; }
 
-        public Books B { get; set; }
-        public Categories C { get; set; }
+        public virtual Books B { get; set; }
+        public virtual Categories C { get; set; }
     }
 }

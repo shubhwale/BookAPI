@@ -21,6 +21,6 @@ namespace BooksAPI.Models
         public DateTime ReleaseDate { get; set; }
         public string ImageUrl { get; set; }
 
-        public ICollection<BooksCategories> BooksCategories { get; set; }
+        public virtual ICollection<BooksCategories> BooksCategories { get; set; }
     }
 }

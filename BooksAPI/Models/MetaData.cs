@@ -11,6 +11,7 @@ namespace BooksAPI.Models
         [Required(ErrorMessage ="Name required", AllowEmptyStrings = false)]
         public string Name { get; set; }
         [Required(ErrorMessage = "Email required", AllowEmptyStrings =false)]
+        [EmailAddress(ErrorMessage ="Wrong format")]
         public string Email { get; set; }
         [Required(ErrorMessage = "Password required", AllowEmptyStrings = false)]
         public string Password { get; set; }

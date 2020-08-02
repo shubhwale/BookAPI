@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BooksAPI.Models;
@@ -121,10 +120,7 @@ namespace BooksAPI.Controllers
 
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
-
-
-
-                return CreatedAtAction("GetUsers", new { id = user.UserId }, user);
+                return CreatedAtAction("GetUsers", new { id = user.UserId });
             }
             catch (Exception ex)
             {
@@ -135,12 +131,13 @@ namespace BooksAPI.Controllers
 
         // POST: api/Users/login
         [HttpPost("login")]
-        public async Task<ActionResult<ResponseModel>> LoginUser([FromBody] Users user)
+        public async Task<ActionResult<UserCreateResponse>> LoginUser([FromBody] LoginRequest loginRequest)
         {
             try
             {
-                user = await _context.Users.Where(u => u.Email == user.Email && u.Password == user.Password).FirstOrDefaultAsync();
-                ResponseModel responseModel = null;
+                UserCreateResponse userCreateResponse = null;
+
+                Users user = await _context.Users.Where(u => u.Email == loginRequest.Email && u.Password == loginRequest.Password).FirstOrDefaultAsync();
 
                 if (user != null)
                 {
@@ -148,17 +145,19 @@ namespace BooksAPI.Controllers
                     user.RefreshToken.Add(refreshToken);
                     await _context.SaveChangesAsync();
 
-                    responseModel = new ResponseModel(user);
-                    responseModel.RefreshToken = refreshToken.Token;
+                    userCreateResponse = new UserCreateResponse();
+                    userCreateResponse.RefreshToken = refreshToken.Token;
+                    userCreateResponse.AccessToken = GenerateAccessToken(userCreateResponse.UserId);
+                    userCreateResponse.UserId = user.UserId;
+                    userCreateResponse.Name = user.Name;
                 }
 
-                if (responseModel == null)
+                if (userCreateResponse == null)
                 {
                     return NotFound();
                 }
-                responseModel.AccessToken = GenerateAccessToken(responseModel.UserId);
 
-                return responseModel;
+                return Ok(userCreateResponse);
             }
             catch (Exception ex)
             {
@@ -169,7 +168,7 @@ namespace BooksAPI.Controllers
 
         // POST: api/Users/refreshtoken
         [HttpPost("refreshtoken")]
-        public async Task<ActionResult<ResponseModel>> RefreshToken([FromBody] RefreshRequest refreshRequest)
+        public async Task<ActionResult<UserCreateResponse>> RefreshToken([FromBody] RefreshRequest refreshRequest)
         {
             try
             {
@@ -177,11 +176,11 @@ namespace BooksAPI.Controllers
 
                 if (user != null && ValidateRefreshToken(user, refreshRequest.Token))
                 {
-                    ResponseModel responseModel = new ResponseModel(user);
+                    UserCreateResponse responseModel = new UserCreateResponse();
                     responseModel.AccessToken = GenerateAccessToken(responseModel.UserId);
-                    return responseModel;
+                    return Ok(responseModel);
                 }
-                return null;
+                return NotFound();
             }
             catch (Exception ex)
             {
@@ -287,16 +286,40 @@ namespace BooksAPI.Controllers
                     return BadRequest(ModelState);
                 }
 
-                var users = await _context.Users.FindAsync(id);
-                if (users == null)
+                var user = await _context.Users.FindAsync(id);
+                if (user == null)
                 {
                     return NotFound();
                 }
 
-                _context.Users.Remove(users);
+                _context.Users.Remove(user);
                 await _context.SaveChangesAsync();
 
-                return Ok(users);
+                return Ok(user);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return null;
+            }
+        }
+
+        // POST: api/Users/getusredetails
+        [HttpGet("getuserdetails/{id}")]
+        public async Task<ActionResult<UserDetails>> GetUserDetails([FromRoute] int id)
+        {
+            try
+            {
+                UserDetails obj = new UserDetails();
+                var user = await _context.Users.FindAsync(id);
+                if(user!=null)
+                {
+                    obj.UserId = user.UserId;
+                    obj.Name = user.Name;
+                    obj.Email = user.Email;
+                    return Ok(obj);
+                }
+                return NotFound();
             }
             catch (Exception ex)
             {

@@ -20,8 +20,8 @@ namespace BooksAPI.Models
         public int CityId { get; set; }
         public int StateId { get; set; }
 
-        public Cities City { get; set; }
-        public States State { get; set; }
-        public ICollection<RefreshToken> RefreshToken { get; set; }
+        public virtual Cities City { get; set; }
+        public virtual States State { get; set; }
+        public virtual ICollection<RefreshToken> RefreshToken { get; set; }
     }
 }

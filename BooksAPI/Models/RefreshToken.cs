@@ -10,6 +10,6 @@ namespace BooksAPI.Models
         public string Token { get; set; }
         public DateTime ExpiryDate { get; set; }
 
-        public Users User { get; set; }
+        public virtual Users User { get; set; }
     }
 }

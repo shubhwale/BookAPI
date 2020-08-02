@@ -88,7 +88,7 @@ namespace BooksAPI.Controllers
         }
 
         // PUT: api/Books/5
-        [Authorize]
+        //[Authorize]
         [HttpPut("{id}")]
         //public async Task<IActionResult> EditBook([FromRoute] int id, [FromBody] Books books)
         public async Task<IActionResult> EditBook([FromBody] Books books)
@@ -123,7 +123,7 @@ namespace BooksAPI.Controllers
                     }
                 }
 
-                return NoContent();
+                return Ok();
             }
             catch (Exception ex)
             {
@@ -132,10 +132,10 @@ namespace BooksAPI.Controllers
             }
         }
 
-        // POST: api/Books
-        [Authorize]
-        [HttpPost]
-        public async Task<IActionResult> AddBook([FromBody] Books books)
+        // POST: api/Books/addbook
+        //[Authorize]
+        [HttpPost("addbook")]
+        public async Task<IActionResult> AddBook([FromBody] Books book)
         {
             try
             {
@@ -144,14 +144,14 @@ namespace BooksAPI.Controllers
                     return BadRequest(ModelState);
                 }
 
-                context.Books.Add(books);
+                context.Books.Add(book);
                 try
                 {
                     await context.SaveChangesAsync();
                 }
                 catch (DbUpdateException)
                 {
-                    if (BooksExists(books.BookId))
+                    if (BooksExists(book.BookId))
                     {
                         return new StatusCodeResult(StatusCodes.Status409Conflict);
                     }
@@ -161,7 +161,7 @@ namespace BooksAPI.Controllers
                     }
                 }
 
-                return CreatedAtAction("GetBooks", new { id = books.BookId }, books);
+                return Ok(new { book.BookId });
             }
             catch (Exception ex)
             {

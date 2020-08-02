@@ -35,9 +35,8 @@ namespace BooksAPI.Models
         {
             modelBuilder.Entity<Books>(entity =>
             {
-                entity.HasKey(e => e.BookId);
-
-                entity.Property(e => e.BookId).ValueGeneratedNever();
+                entity.HasKey(e => e.BookId)
+                    .HasName("PK__Books2__3DE0C2070A94C696");
 
                 entity.Property(e => e.Author)
                     .IsRequired()
@@ -63,7 +62,8 @@ namespace BooksAPI.Models
 
             modelBuilder.Entity<BooksCategories>(entity =>
             {
-                entity.HasKey(e => new { e.Bid, e.Cid });
+                entity.HasKey(e => new { e.Bid, e.Cid })
+                    .HasName("PK_Bid_Cid");
 
                 entity.ToTable("Books_Categories");
 
@@ -82,7 +82,8 @@ namespace BooksAPI.Models
 
             modelBuilder.Entity<Categories>(entity =>
             {
-                entity.HasKey(e => e.CategoryId);
+                entity.HasKey(e => e.CategoryId)
+                    .HasName("PK__Categori__19093A0BDDB31AEC");
 
                 entity.Property(e => e.CategoryName)
                     .IsRequired()
@@ -92,7 +93,8 @@ namespace BooksAPI.Models
 
             modelBuilder.Entity<Cities>(entity =>
             {
-                entity.HasKey(e => e.CityId);
+                entity.HasKey(e => e.CityId)
+                    .HasName("PK__Cities__F2D21B76EBA624D7");
 
                 entity.Property(e => e.CityName)
                     .IsRequired()
@@ -126,7 +128,8 @@ namespace BooksAPI.Models
 
             modelBuilder.Entity<States>(entity =>
             {
-                entity.HasKey(e => e.StateId);
+                entity.HasKey(e => e.StateId)
+                    .HasName("PK__States__C3BA3B3AB7CA86EE");
 
                 entity.Property(e => e.StateName)
                     .IsRequired()
@@ -136,7 +139,8 @@ namespace BooksAPI.Models
 
             modelBuilder.Entity<Users>(entity =>
             {
-                entity.HasKey(e => e.UserId);
+                entity.HasKey(e => e.UserId)
+                    .HasName("PK__Customer__049E3AA9231E38BC");
 
                 entity.Property(e => e.UserId).HasColumnName("UserID");
 
@@ -181,6 +185,10 @@ namespace BooksAPI.Models
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_States");
             });
+
+            OnModelCreatingPartial(modelBuilder);
         }
+
+        partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
     }
 }

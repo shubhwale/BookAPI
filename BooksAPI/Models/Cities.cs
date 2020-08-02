@@ -13,6 +13,6 @@ namespace BooksAPI.Models
         public int CityId { get; set; }
         public string CityName { get; set; }
 
-        public ICollection<Users> Users { get; set; }
+        public virtual ICollection<Users> Users { get; set; }
     }
 }
